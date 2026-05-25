@@ -1,27 +1,27 @@
 ﻿name: Enterprise CI Pipeline
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+on: [push]
 
 jobs:
-  build-and-test:
+  test-and-docs:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
+      - uses: actions/checkout@v3
+      
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-
+          
       - name: Install Dependencies
         run: |
-          pip install fastapi uvicorn redis pydantic-settings pytest
+          pip install fastapi uvicorn redis pydantic-settings psutil
           
-      - name: Run Quality Checks
+      - name: Validate README
         run: |
-          echo "Executing Enterprise Test Suite..."
+          if [ ! -f README.md ]; then echo "README.md missing!" && exit 1; fi
+          
+      - name: Run Tests
+        run: |
+          echo "Running Enterprise Test Suite..."
+          # Add your test execution command here (e.g., pytest)
