@@ -1,29 +1,29 @@
-from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
-import asyncio
+import asyncio, psutil
+from fastapi import APIRouter, WebSocket
 from src.core.config import redis_client
 
 router = APIRouter()
+connected_clients = []
 
-@router.get("/resource")
-async def get_resource():
-    return {"status": "success", "data": "Protected Resource Accessed"}
+# Global function to push logs to the UI
+async def notify_audit_trail(message: str):
+    for client in connected_clients:
+        await client.send_json({"type": "log", "data": message})
 
-@router.get("/status")
-async def get_status(request: Request):
-    user_id = request.client.host if request.client else "127.0.0.1"
-    count = redis_client.get(user_id)
-    return {"user_id": user_id, "remaining": int(count) if count is not None else 10}
+@router.post("/config/limit")
+async def update_limit(limit: int):
+    redis_client.set("global_limit", limit)
+    return {"status": "success"}
 
 @router.websocket("/ws/status")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
+    connected_clients.append(websocket)
     try:
         while True:
-            # Send current status every 0.5 seconds
-            user_id = "127.0.0.1" 
-            count = redis_client.get(user_id)
-            remaining = int(count) if count is not None else 10
-            await websocket.send_json({"remaining": remaining})
-            await asyncio.sleep(0.5)
-    except WebSocketDisconnect:
-        pass
+            # Stream system telemetry to the chart
+            stats = {"type": "stats", "data": {"cpu": psutil.cpu_percent()}}
+            await websocket.send_json(stats)
+            await asyncio.sleep(1)
+    except:
+        connected_clients.remove(websocket)
