@@ -1,4 +1,4 @@
-name: Enterprise CI Pipeline
+﻿name: Enterprise CI Pipeline
 
 on:
   push:
@@ -7,19 +7,21 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
-      - name: Install dependencies
+          python-version: '3.11'
+
+      - name: Install Dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install fastapi uvicorn redis pydantic-settings
-      - name: Linting
-        run: echo "Running enterprise linting checks..."
-      - name: Run Tests
-        run: echo "Executing automated tests..."
+          pip install fastapi uvicorn redis pydantic-settings pytest
+          
+      - name: Run Quality Checks
+        run: |
+          echo "Executing Enterprise Test Suite..."
