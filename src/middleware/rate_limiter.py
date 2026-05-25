@@ -12,8 +12,7 @@ async def rate_limit_middleware(request: Request, call_next):
     
     # Execute atomic Lua script
     # We pass user_id as the key, and capacity/refill_rate as arguments
-    allowed = rate_limit_script(keys=[user_id], args=[capacity, refill_rate])
-    
+    allowed = rate_limit_script(keys=[user_id], args=[10, 1])    
     if not allowed:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,

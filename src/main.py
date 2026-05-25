@@ -5,6 +5,7 @@ from src.middleware.rate_limiter import rate_limit_middleware
 
 app = FastAPI()
 
+
 # Move the Redis connection and script loading to a central place 
 # or keep them here as you have them.
 redis_client = redis.Redis(host='localhost', port=6379, decode_responses=True)
