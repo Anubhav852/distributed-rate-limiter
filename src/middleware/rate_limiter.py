@@ -1,8 +1,11 @@
-import asyncio
+import time
+
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+
 from src.core.config import redis_client, rate_limit_script
-from src.api.routes import notify_audit_trail
+from src.api.routes import record_event
+
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -10,16 +13,34 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if not request.url.path.startswith("/api/resource"):
             return await call_next(request)
 
-        user_id = request.client.host
-        # Fetch current dynamic limit from Redis
+        ip = request.client.host if request.client else "unknown"
+        start = time.perf_counter()
+
+        # Current dynamic limit from Redis
         limit = int(redis_client.get("global_limit") or 10)
-        
-        # Lua Script execution (Atomic check-and-decrement)
-        allowed = rate_limit_script(keys=[user_id], args=[limit, 60])
-        
+
+        # Atomic check-and-decrement in Lua
+        allowed = rate_limit_script(keys=[ip], args=[limit, 60])
+
+        remaining = int(redis_client.get(ip) or 0)
+        ttl = max(redis_client.ttl(ip), 1)
+        headers = {
+            "X-RateLimit-Limit": str(limit),
+            "X-RateLimit-Remaining": str(remaining),
+        }
+
         if not allowed:
-            # Trigger the Audit Trail UI log
-            await notify_audit_trail(f"429: Rate Limit Hit by {user_id} at {request.url.path}")
-            return Response(status_code=429, content="Rate Limit Exceeded")
-            
-        return await call_next(request)
+            latency = (time.perf_counter() - start) * 1000
+            record_event(ip, request.url.path, 429, True, latency, 0, limit)
+            return Response(
+                status_code=429,
+                content="Rate Limit Exceeded",
+                headers={**headers, "Retry-After": str(ttl)},
+            )
+
+        response = await call_next(request)
+        for k, v in headers.items():
+            response.headers[k] = v
+        latency = (time.perf_counter() - start) * 1000
+        record_event(ip, request.url.path, response.status_code, False, latency, remaining, limit)
+        return response

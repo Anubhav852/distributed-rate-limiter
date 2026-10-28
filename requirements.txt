@@ -1,3 +1,5 @@
-fastapi
-uvicorn
-redis
+﻿fastapi
+uvicorn[standard]
+redis>=5.0.1
+pydantic-settings
+psutil
