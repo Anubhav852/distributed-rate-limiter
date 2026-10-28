@@ -2,6 +2,19 @@
 
 [![Status](https://img.shields.io/badge/status-production--ready-green.svg)]()
 
+## Live Demo
+
+Try the live Distributed Rate Limiter dashboard on Render: [https://distributed-rate-limiter-1qtt.onrender.com](https://distributed-rate-limiter-1qtt.onrender.com).
+
+### Test it
+
+- Select **Send 1** to send a real request through the FastAPI rate-limiting middleware.
+- Select **Burst 20** to send 20 requests quickly. Requests within the current per-client limit are allowed; excess requests receive HTTP 429 and appear as blocked events in the live feed.
+- The dashboard shows request totals, allowed and blocked traffic, recent events, and server CPU and memory.
+- Use **Reset my quota** to clear the current browser client's rate-limit counter. The global limit can be changed from the dashboard.
+
+The hosted app uses Render Key Value for shared rate-limit counters and dashboard statistics. The demo may take a little time to respond after the service has been idle.
+
 The **Enterprise Rate Limiter & Monitoring Suite** is a high-concurrency, distributed API management solution. It provides granular rate control via Redis and real-time system observability, designed for engineers who need to monitor API health and throughput in mission-critical environments.
 
 ---
